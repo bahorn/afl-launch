@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+    mrand "math/rand"
 )
 
 const MAXFUZZERS = 256
@@ -97,6 +98,12 @@ func spawn(fuzzerName string, args []string) {
 
 func main() {
 
+    modes := []string{
+        "coe",
+        "fast",
+        "explore",
+    }
+
 	flag.Parse()
 	if len(flag.Args()) < 2 {
 		log.Fatalf("no command to fuzz, eg: targetname @@")
@@ -136,12 +143,15 @@ func main() {
 		spawn(name, append(baseArgs, "-S", name))
 	} else {
 		name := baseName + "-" + "M" + "0"
-		spawn(name, append(baseArgs, "-M", name))
+		spawn(name, append(baseArgs, "-p", "exploit", "-M", name))
 	}
 
 	// launch the rest
 	for i := 1; i < *flagNum; i++ {
+        v  := mrand.Int() % len(modes)
+        mode := modes[v]
+
 		name := baseName + "-" + "S" + strconv.Itoa(i)
-		spawn(name, append(baseArgs, "-S", name))
+		spawn(name, append(baseArgs, "-p", mode, "-S", name))
 	}
 }
