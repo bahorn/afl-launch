@@ -125,8 +125,8 @@ func main() {
 	}
 
 	flag.Parse()
-	if len(flag.Args()) < 2 {
-		log.Fatalf("no command to fuzz, eg: targetname @@")
+    if len(flag.Args()) < 1 {
+		log.Fatalf("no command to fuzz, eg: targetname [@@]")
 	}
 
 	// tmp path
