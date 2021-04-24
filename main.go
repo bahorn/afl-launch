@@ -3,17 +3,17 @@ package main
 import (
 	"crypto/rand"
 	"flag"
+	"fmt"
 	"io"
 	"log"
+	mrand "math/rand"
 	"os"
 	"os/exec"
 	"path"
 	"regexp"
 	"strconv"
 	"strings"
-    mrand "math/rand"
-    "fmt"
-    "time"
+	"time"
 )
 
 const MAXFUZZERS = 256
@@ -30,8 +30,8 @@ var (
 	flagOutput   = flag.String("o", "", "afl-fuzz -o option (output location)")
 	flagFile     = flag.String("f", "", "Filename template (substituted and passed via -f)")
 	flagXXX      = flag.Bool("XXX", false, "[HACK] substitute XXX in the target args with an 8 char random string [HACK]")
-    flagTmp      = flag.String("l", "/tmp", "Sets the base AFL_TMPDIR")
-	subRegex = regexp.MustCompile("XXX")
+	flagTmp      = flag.String("l", "/tmp", "Sets the base AFL_TMPDIR")
+	subRegex     = regexp.MustCompile("XXX")
 )
 
 func randomName(n int) (result string) {
@@ -59,18 +59,18 @@ func spawn(fuzzerName string, args []string) {
 	}
 
 	// Create a logfile for afl's stdout. Truncates any existing logfile.
-    fuzzerDir := path.Join(*flagOutput, fuzzerName)
-    fuzzerTmpDir := path.Join(*flagTmp, fuzzerName)
+	fuzzerDir := path.Join(*flagOutput, fuzzerName)
+	fuzzerTmpDir := path.Join(*flagTmp, fuzzerName)
 
 	err := os.MkdirAll(fuzzerDir, 0777)
 	if err != nil {
 		log.Fatalf(err.Error())
-    }
+	}
 
 	err = os.MkdirAll(fuzzerTmpDir, 0777)
 	if err != nil {
 		log.Fatalf(err.Error())
-    }
+	}
 
 	fd, err := os.Create(path.Join(fuzzerDir, "afl-launch.log"))
 	if err != nil {
@@ -92,11 +92,11 @@ func spawn(fuzzerName string, args []string) {
 		args = append(args, flag.Args()...)
 	}
 
-    cmd := exec.Command(AFLNAME, args...)
-    cmd.Env = append(
-        os.Environ(),
-        fmt.Sprintf("AFL_TMPDIR=%s", fuzzerTmpDir),
-    )
+	cmd := exec.Command(AFLNAME, args...)
+	cmd.Env = append(
+		os.Environ(),
+		fmt.Sprintf("AFL_TMPDIR=%s", fuzzerTmpDir),
+	)
 
 	cmd.Stdout = fd
 	err = cmd.Start()
@@ -112,29 +112,29 @@ func spawn(fuzzerName string, args []string) {
 }
 
 func tmpdirname(name string) string {
-    return fmt.Sprintf("AFL_TMPDIR=%s", path.Join(*flagTmp, name))
+	return fmt.Sprintf("AFL_TMPDIR=%s", path.Join(*flagTmp, name))
 }
 
 func main() {
-    mrand.Seed(time.Now().Unix())
+	mrand.Seed(time.Now().Unix())
 
-    modes := []string{
-        "coe",
-        "fast",
-        "explore",
-    }
+	modes := []string{
+		"coe",
+		"fast",
+		"explore",
+	}
 
-    flag.Parse()
+	flag.Parse()
 	if len(flag.Args()) < 2 {
 		log.Fatalf("no command to fuzz, eg: targetname @@")
 	}
 
-    // tmp path
-    if _, err := os.Stat(*flagTmp); os.IsNotExist(err) {
-        log.Fatalf("couldn't find tmp path %s", *flagTmp)
-    }
+	// tmp path
+	if _, err := os.Stat(*flagTmp); os.IsNotExist(err) {
+		log.Fatalf("couldn't find tmp path %s", *flagTmp)
+	}
 	// can we find afl?
-    _, err := exec.LookPath(AFLNAME)
+	_, err := exec.LookPath(AFLNAME)
 	if err != nil {
 		log.Fatalf("couldn't find %s in $PATH", AFLNAME)
 	}
@@ -145,7 +145,7 @@ func main() {
 	// sanity for name
 	if len(*flagName) > 32 {
 		log.Fatalf("base name too long (%d), must be <= 32", len(*flagName))
-    }
+	}
 
 	// collect the proxy args for afl-fuzz
 	baseArgs := []string{}
@@ -159,7 +159,7 @@ func main() {
 	baseName := *flagName
 	if len(baseName) == 0 {
 		baseName = randomName(5)
-    }
+	}
 
 	// first instance is a master unless indicated otherwise
 	if *flagNoMaster {
@@ -172,9 +172,9 @@ func main() {
 
 	// launch the rest
 	for i := 1; i < *flagNum; i++ {
-        v  := mrand.Int() % len(modes)
-        mode := modes[v]
+		v := mrand.Int() % len(modes)
+		mode := modes[v]
 		name := baseName + "-" + "S" + strconv.Itoa(i)
-        spawn(name, append(baseArgs, "-p", mode, "-S", name))
+		spawn(name, append(baseArgs, "-p", mode, "-S", name))
 	}
 }
